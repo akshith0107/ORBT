@@ -1,0 +1,130 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+
+  tasks     Task[]
+  habits    Habit[]
+  insights  AIInsight[]
+  weeklyReports WeeklyReport[]
+}
+
+model Task {
+  id             String     @id @default(uuid())
+  title          String
+  description    String?
+  priority       Priority   @default(MEDIUM)
+  status         TaskStatus @default(PLANNING)
+  difficulty     Difficulty @default(MEDIUM)
+  dueDate        DateTime?
+  estimatedHours Float?
+  completionProbability Int?
+  aiSummary      String?
+  category       String     @default("General")
+  rescheduleCount Int       @default(0)
+  createdAt      DateTime   @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  subtasks Subtask[]
+  reschedules TaskRescheduleHistory[]
+}
+
+model Subtask {
+  id        String     @id @default(uuid())
+  title     String
+  status    TaskStatus @default(PLANNING)
+  createdAt DateTime   @default(now())
+
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  taskId String
+}
+
+model AIInsight {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  type        String
+  createdAt   DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+}
+
+model TaskRescheduleHistory {
+  id        String   @id @default(uuid())
+  oldDate   DateTime
+  newDate   DateTime
+  reason    String
+  createdAt DateTime @default(now())
+
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  taskId String
+}
+
+model WeeklyReport {
+  id        String   @id @default(uuid())
+  report    String
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+}
+
+model Habit {
+  id        String    @id @default(uuid())
+  name      String
+  category  String
+  frequency Frequency @default(DAILY)
+  createdAt DateTime  @default(now())
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  logs      HabitLog[]
+}
+
+model HabitLog {
+  id        String   @id @default(uuid())
+  date      DateTime
+  completed Boolean  @default(true)
+
+  habit   Habit  @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  habitId String
+
+  @@unique([habitId, date])
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum TaskStatus {
+  PLANNING
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum Frequency {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
